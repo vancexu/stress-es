@@ -1,0 +1,13 @@
+*.out
+*.test
+*.xml
+*.swp
+.idea/
+*.iml
+*.cov
+*.html
+.tmp/
+.vscode/
+/vendor
+/_vendor-*
+.DS_Store

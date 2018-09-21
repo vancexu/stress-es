@@ -1,2 +1,2 @@
 # stress-es
-Stress test ElasticSearch
+Stress test ElasticSearch for Cadence use cases

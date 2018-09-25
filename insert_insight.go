@@ -21,10 +21,8 @@ const insight_index_setting = `
 }`
 
 
-func insertInsight(threadID string, done *sync.WaitGroup) {
+func insertInsight(threadID string, done *sync.WaitGroup, times int) {
 	defer done.Done()
-
-	times := 10000
 
 	domainID := "100cd4ec-843c-4055-8baa-de52d697335d"
 	numOfStateKey := 50
@@ -80,10 +78,10 @@ func insertInsight(threadID string, done *sync.WaitGroup) {
 		}
 		//fmt.Println(upd)
 
+		i += 1
 		if i%2000 == 0 {
 			fmt.Println(threadID, i)
 		}
-		i += 1
 	}
 
 	elapsedTime := time.Since(startTime)
@@ -95,6 +93,10 @@ func main() {
 	fmt.Println("Number of go routines: ")
 	fmt.Scanln(&numOfThread)
 
+	var numOfRequestPerThread int
+	fmt.Println("Number of request per go routines: ")
+	fmt.Scanln(&numOfRequestPerThread)
+
 	if numOfThread <= 0 {
 		numOfThread = 1
 	}
@@ -102,7 +104,7 @@ func main() {
 	var done sync.WaitGroup
 	done.Add(numOfThread)
 	for i := 0; i < numOfThread; i += 1 {
-		go insertInsight(strconv.Itoa(i), &done)
+		go insertInsight(strconv.Itoa(i), &done, numOfRequestPerThread)
 	}
 	done.Wait()
 }

@@ -1,15 +1,15 @@
 package main
 
 import (
-	"sync"
-	"strconv"
-	"github.com/olivere/elastic"
+	"context"
+	"encoding/json"
 	"fmt"
-	"time"
+	"github.com/olivere/elastic"
 	"github.com/pborman/uuid"
 	"math/rand"
-	"encoding/json"
-	"context"
+	"strconv"
+	"sync"
+	"time"
 )
 
 const insight_index_setting = `
@@ -20,8 +20,7 @@ const insight_index_setting = `
 	}
 }`
 
-
-func insertInsight(threadID string, done *sync.WaitGroup, times int) {
+func insertInsight(threadID string, done *sync.WaitGroup, times int, duration *time.Duration) {
 	defer done.Done()
 
 	domainID := "100cd4ec-843c-4055-8baa-de52d697335d"
@@ -86,6 +85,7 @@ func insertInsight(threadID string, done *sync.WaitGroup, times int) {
 
 	elapsedTime := time.Since(startTime)
 	fmt.Println(threadID, elapsedTime)
+	*duration += elapsedTime
 }
 
 func main() {
@@ -103,8 +103,10 @@ func main() {
 
 	var done sync.WaitGroup
 	done.Add(numOfThread)
+	var duration time.Duration
 	for i := 0; i < numOfThread; i += 1 {
-		go insertInsight(strconv.Itoa(i), &done, numOfRequestPerThread)
+		go insertInsight(strconv.Itoa(i), &done, numOfRequestPerThread, &duration)
 	}
 	done.Wait()
+	fmt.Println("avg time: ", time.Duration(int64(duration)/int64(numOfThread)))
 }

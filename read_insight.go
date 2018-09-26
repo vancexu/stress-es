@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/olivere/elastic"
 	"math/rand"
-	"time"
 	"strconv"
+	"time"
 )
 
 func readInsight(low, high int64, from, pagesize int, stateKey, stateValue string) (int64, int64) {

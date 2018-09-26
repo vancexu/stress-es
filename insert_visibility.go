@@ -7,8 +7,8 @@ import (
 
 	"github.com/olivere/elastic"
 	"github.com/pborman/uuid"
-	"sync"
 	"strconv"
+	"sync"
 )
 
 type ClosedWorkflow struct {
@@ -30,7 +30,7 @@ const index_setting = `
 	}
 }`
 
-func insertDoc(threadID string, done *sync.WaitGroup, times int) {
+func insertDoc(threadID string, done *sync.WaitGroup, times int, duration *time.Duration) {
 	defer done.Done()
 
 	domainID := "12324ea2-69f9-4495-a1b2-6ea71b5fa459"
@@ -88,6 +88,7 @@ func insertDoc(threadID string, done *sync.WaitGroup, times int) {
 
 	elapsedTime := time.Since(startTime)
 	fmt.Println(threadID, elapsedTime)
+	*duration += elapsedTime
 }
 
 func main() {
@@ -106,9 +107,10 @@ func main() {
 
 	var done sync.WaitGroup
 	done.Add(numOfThread)
+	var duration time.Duration
 	for i := 0; i < numOfThread; i += 1 {
-		go insertDoc(strconv.Itoa(i), &done, numOfRequestPerThread)
+		go insertDoc(strconv.Itoa(i), &done, numOfRequestPerThread, &duration)
 	}
 	done.Wait()
+	fmt.Println("avg time: ", time.Duration(int64(duration)/int64(numOfThread)))
 }
-

@@ -140,5 +140,5 @@ func main() {
 	}
 	done.Wait()
 	fmt.Println("avg time: ", time.Duration(int64(duration)/int64(numOfThread)))
-	fmt.Println("avg bulk took: ", time.Duration(bulkTook/int64(numOfThread)))
+	fmt.Println("avg bulk took: ", bulkTook/int64(numOfThread))
 }

@@ -30,7 +30,8 @@ const index_bulk_setting = `
 	}
 }`
 
-func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int, duration *time.Duration, bulkTook *int64) {
+func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
+	duration, durationWithoutPrep *time.Duration, bulkTook *int64, reqUsed *time.Duration) {
 	defer done.Done()
 
 	domainID := "bulk4ea2-69f9-4495-a1b2-6ea71b5fa459"
@@ -54,9 +55,9 @@ func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int, 
 		}
 	}
 
-	fmt.Println("start execute query")
+	bulkUsed := int64(0)
+	timeUsed := time.Duration(0)
 	startTime := time.Now()
-
 	for t := 1; t <= times; t++ {
 
 		bulkRequest := client.Bulk()
@@ -84,16 +85,20 @@ func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int, 
 			fmt.Printf("warning: number of actions is %d\n", bulkRequest.NumberOfActions())
 		}
 
+		reqStartTime := time.Now()
+
 		bulkResponse, err := bulkRequest.Do(context.Background())
 		if err != nil {
 			fmt.Println("bulk failed", err)
 		}
 
+		timeUsed += time.Since(reqStartTime)
+
 		if bulkRequest.NumberOfActions() != 0 {
 			fmt.Printf("bulk request not done %d\n", bulkRequest.NumberOfActions())
 		}
 
-		*bulkTook += int64(bulkResponse.Took)
+		bulkUsed += int64(bulkResponse.Took)
 
 		if t%2000 == 0 {
 			fmt.Println(threadID, t)
@@ -103,6 +108,9 @@ func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int, 
 	elapsedTime := time.Since(startTime)
 	fmt.Println(threadID, elapsedTime)
 	*duration += elapsedTime
+	*bulkTook += bulkUsed / int64(times)
+	*reqUsed += time.Duration(int64(timeUsed) / int64(times))
+	*durationWithoutPrep += timeUsed
 }
 
 func main() {
@@ -134,11 +142,15 @@ func main() {
 	var done sync.WaitGroup
 	done.Add(numOfThread)
 	var duration time.Duration
+	var durationWithoutPrep time.Duration
+	var reqUsed time.Duration
 	var bulkTook int64
 	for i := 0; i < numOfThread; i += 1 {
-		go insertDocBulk(strconv.Itoa(i), &done, numOfRequestPerThread, bulkSize, &duration, &bulkTook)
+		go insertDocBulk(strconv.Itoa(i), &done, numOfRequestPerThread, bulkSize, &duration, &durationWithoutPrep, &bulkTook, &reqUsed)
 	}
 	done.Wait()
 	fmt.Println("avg time: ", time.Duration(int64(duration)/int64(numOfThread)))
+	fmt.Println("avg time on request: ", time.Duration(int64(durationWithoutPrep)/int64(numOfThread)))
 	fmt.Println("avg bulk took: ", bulkTook/int64(numOfThread))
+	fmt.Println("avg req took: ", time.Duration(int64(reqUsed)/int64(numOfThread)))
 }

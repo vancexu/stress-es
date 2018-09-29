@@ -5,24 +5,15 @@ import (
 	"fmt"
 	"time"
 
+	"encoding/json"
 	"github.com/olivere/elastic"
 	"github.com/pborman/uuid"
+	"math/rand"
 	"strconv"
 	"sync"
 )
 
-type ClosedWorkflowBulk struct {
-	WorkflowID       string `json:"workflow_id"`
-	RunID            string `json:"run_id"`
-	WorkflowTypeName string `json:"workflow_type_name"`
-	Status           int    `json:"status"`
-	StartTime        int64  `json:"start_time"`
-	CloseTime        int64  `json:"close_time"`
-	HistoryLength    int    `json:"history_length"`
-	Info             string `json:"info,omitempty"`
-}
-
-const index_bulk_setting = `
+const insight_bulk_setting = `
 {
 	"settings":{
 		"number_of_shards": 5,
@@ -30,13 +21,21 @@ const index_bulk_setting = `
 	}
 }`
 
-func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
+func insertInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
 	duration, durationWithoutPrep *time.Duration, bulkTook *int64, reqUsed *time.Duration) {
 	defer done.Done()
 
-	domainID := "bulk4ea2-69f9-4495-a1b2-6ea71b5fa459"
-	workflowTypeName := "code.uber.internal/devexp/cadence-bench/load/basic.stressWorkflowExecute"
-	info := "some info"
+	domainID := "bulkinsi-843c-4055-8baa-de52d697335d"
+	numOfStateKey := 50
+	numOfStateValue := 100
+	var stateKey []string
+	var stateValue []string
+	for i := 0; i < numOfStateKey; i += 1 {
+		stateKey = append(stateKey, "state_key_"+strconv.Itoa(i))
+	}
+	for i := 0; i < numOfStateValue; i += 1 {
+		stateValue = append(stateValue, "state_value_"+strconv.Itoa(i))
+	}
 
 	ctx := context.Background()
 	client, err := elastic.NewClient()
@@ -46,7 +45,7 @@ func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
 	exists, err := client.IndexExists(domainID).Do(ctx)
 	if !exists {
 		fmt.Println("create index ", domainID)
-		createIndex, err := client.CreateIndex(domainID).BodyString(index_bulk_setting).Do(ctx)
+		createIndex, err := client.CreateIndex(domainID).BodyString(insight_bulk_setting).Do(ctx)
 		if err != nil {
 			panic(err)
 		}
@@ -66,18 +65,17 @@ func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
 			rid := uuid.New()
 
 			id := rid + "_" + rid
-			body := ClosedWorkflowBulk{
-				WorkflowID:       rid,
-				RunID:            rid,
-				WorkflowTypeName: workflowTypeName,
-				Status:           0,
-				StartTime:        millis - 3600,
-				CloseTime:        millis,
-				HistoryLength:    1024,
-				Info:             info,
+			src := rand.NewSource(time.Now().UnixNano())
+			r := rand.New(src)
+			k := stateKey[r.Intn(numOfStateKey)]
+			v := stateValue[r.Intn(numOfStateValue)]
+			body := []byte(fmt.Sprintf("{\"%s\" : \"%s\", \"update_time\" : %d}", k, v, millis))
+			var b map[string]interface{}
+			if err := json.Unmarshal(body, &b); err != nil {
+				panic(err)
 			}
 
-			req := elastic.NewBulkIndexRequest().Index(domainID).Type("_doc").Id(id).Doc(body)
+			req := elastic.NewBulkUpdateRequest().Index(domainID).Type("_doc").Id(id).Doc(b)
 			bulkRequest.Add(req)
 		}
 
@@ -146,7 +144,7 @@ func main() {
 	var reqUsed time.Duration
 	var bulkTook int64
 	for i := 0; i < numOfThread; i += 1 {
-		go insertDocBulk(strconv.Itoa(i), &done, numOfRequestPerThread, bulkSize, &duration, &durationWithoutPrep, &bulkTook, &reqUsed)
+		go insertInsightBulk(strconv.Itoa(i), &done, numOfRequestPerThread, bulkSize, &duration, &durationWithoutPrep, &bulkTook, &reqUsed)
 	}
 	done.Wait()
 	fmt.Println("avg time: ", time.Duration(int64(duration)/int64(numOfThread)))

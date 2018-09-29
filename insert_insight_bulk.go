@@ -75,7 +75,7 @@ func insertInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize i
 				panic(err)
 			}
 
-			req := elastic.NewBulkUpdateRequest().Index(domainID).Type("_doc").Id(id).Doc(b)
+			req := elastic.NewBulkUpdateRequest().Index(domainID).Type("_doc").Id(id).Doc(b).DocAsUpsert(true)
 			bulkRequest.Add(req)
 		}
 

@@ -16,7 +16,7 @@ func read_visibility(low, high int64, from, pagesize int) (int64, int64) {
 		panic(err)
 	}
 
-	domainID := "12324ea2-69f9-4495-a1b2-6ea71b5fa459"
+	domainID := "bulk4ea2-69f9-4495-a1b2-6ea71b5fa459"
 	workflowTypeName := "code.uber.internal/devexp/cadence-bench/load/basic.stressWorkflowExecute"
 
 	matchQuery := elastic.NewMatchQuery("workflow_type_name", workflowTypeName)

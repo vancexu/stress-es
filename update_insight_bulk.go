@@ -7,13 +7,13 @@ import (
 
 	"encoding/json"
 	"github.com/olivere/elastic"
+	"github.com/pborman/uuid"
 	"math/rand"
 	"strconv"
 	"sync"
-	"github.com/pborman/uuid"
 )
 
-const insight_bulk_setting = `
+const insight_bulk_update_setting = `
 {
 	"settings":{
 		"number_of_shards": 5,
@@ -21,21 +21,18 @@ const insight_bulk_setting = `
 	}
 }`
 
-func insertInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
+var stateKeys []string
+var stateValues [][]string
+var docIDs []string
+var numOfStates int
+var numOfValues int
+var numOfDoc int
+
+func updateInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
 	duration, durationWithoutPrep *time.Duration, bulkTook *int64, reqUsed *time.Duration) {
 	defer done.Done()
 
-	domainID := "bulkinsi-843c-4055-8baa-de52d697335d"
-	numOfStateKey := 50
-	numOfStateValue := 100
-	var stateKey []string
-	var stateValue []string
-	for i := 0; i < numOfStateKey; i += 1 {
-		stateKey = append(stateKey, "state_key_"+strconv.Itoa(i))
-	}
-	for i := 0; i < numOfStateValue; i += 1 {
-		stateValue = append(stateValue, "state_value_"+strconv.Itoa(i))
-	}
+	domainID := "bulkupda-843c-4055-8baa-de52d697335d"
 
 	ctx := context.Background()
 	client, err := elastic.NewClient()
@@ -45,7 +42,7 @@ func insertInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize i
 	exists, err := client.IndexExists(domainID).Do(ctx)
 	if !exists {
 		fmt.Println("create index ", domainID)
-		createIndex, err := client.CreateIndex(domainID).BodyString(insight_bulk_setting).Do(ctx)
+		createIndex, err := client.CreateIndex(domainID).BodyString(insight_bulk_update_setting).Do(ctx)
 		if err != nil {
 			panic(err)
 		}
@@ -58,17 +55,18 @@ func insertInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize i
 	timeUsed := time.Duration(0)
 	startTime := time.Now()
 	for t := 1; t <= times; t++ {
-		rid := uuid.New()
-		id := rid + "_" + rid
 
 		bulkRequest := client.Bulk()
 		for i := 0; i < batchSize; i++ {
 			millis := time.Now().UnixNano() / 1e6
-
 			src := rand.NewSource(time.Now().UnixNano())
 			r := rand.New(src)
-			k := stateKey[r.Intn(numOfStateKey)]
-			v := stateValue[r.Intn(numOfStateValue)]
+
+			id := getDocID(docIDs[r.Intn(numOfDoc)])
+
+			keyIndex := r.Intn(numOfStates)
+			k := stateKeys[keyIndex]
+			v := stateValues[keyIndex][r.Intn(numOfValues)]
 			body := []byte(fmt.Sprintf("{\"%s\" : \"%s\", \"update_time\" : %d}", k, v, millis))
 			var b map[string]interface{}
 			if err := json.Unmarshal(body, &b); err != nil {
@@ -137,6 +135,8 @@ func main() {
 		bulkSize = 20000
 	}
 
+	initData()
+
 	var done sync.WaitGroup
 	done.Add(numOfThread)
 	var duration time.Duration
@@ -144,11 +144,42 @@ func main() {
 	var reqUsed time.Duration
 	var bulkTook int64
 	for i := 0; i < numOfThread; i += 1 {
-		go insertInsightBulk(strconv.Itoa(i), &done, numOfRequestPerThread, bulkSize, &duration, &durationWithoutPrep, &bulkTook, &reqUsed)
+		go updateInsightBulk(strconv.Itoa(i), &done, numOfRequestPerThread, bulkSize, &duration, &durationWithoutPrep, &bulkTook, &reqUsed)
 	}
 	done.Wait()
 	fmt.Println("avg time: ", time.Duration(int64(duration)/int64(numOfThread)))
 	fmt.Println("avg time on request: ", time.Duration(int64(durationWithoutPrep)/int64(numOfThread)))
 	fmt.Println("avg bulk took: ", bulkTook/int64(numOfThread))
 	fmt.Println("avg req took: ", time.Duration(int64(reqUsed)/int64(numOfThread)))
+}
+
+func initData() {
+	numOfStates = 5000
+	numOfValues = 100
+	numOfDoc = 1000000 // 1M
+	for i := 0; i < numOfStates; i++ {
+		stateKeys = append(stateKeys, uuid.New())
+
+		var values []string
+		for j := 0; j < numOfValues; j++ {
+			values = append(values, uuid.New())
+		}
+		stateValues = append(stateValues, values)
+	}
+
+	for i := 0; i < numOfDoc; i++ {
+		docIDs = append(docIDs, uuid.New())
+	}
+}
+
+func getDocID(s string) string {
+	return s + "_" + reverse(s)
+}
+
+func reverse(s string) string {
+	r := []rune(s)
+	for i, j := 0, len(r)-1; i < len(r)/2; i, j = i+1, j-1 {
+		r[i], r[j] = r[j], r[i]
+	}
+	return string(r)
 }

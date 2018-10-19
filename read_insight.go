@@ -17,7 +17,8 @@ func readInsight(low, high int64, from, pagesize int, stateKey, stateValue strin
 		panic(err)
 	}
 
-	domainID := "100cd4ec-843c-4055-8baa-de52d697335d"
+	//domainID := "100cd4ec-843c-4055-8baa-de52d697335d"
+	domainID := "bulkinsi-843c-4055-8baa-de52d697335d"
 
 	matchQuery := elastic.NewMatchPhraseQuery(stateKey, stateValue)
 	rangeQuery := elastic.NewRangeQuery("update_time").Gte(low).Lte(high)

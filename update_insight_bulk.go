@@ -24,7 +24,7 @@ const insight_bulk_update_setting = `
 
 var stateKeys []string
 var stateValues [][]string
-var docIDs []string
+var baseDocID string
 var numOfStates int
 var numOfValues int
 var numOfDoc int
@@ -64,10 +64,9 @@ func updateInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize i
 			src := rand.NewSource(time.Now().UnixNano())
 			r := rand.New(src)
 
-			uid := docIDs[r.Intn(numOfDoc)]
-			id := getDocID(uid)
+			id := baseDocID + strconv.Itoa(r.Intn(numOfDoc))
 
-			keyIndex := getKeyIndex(uid, r.Intn(numOfStatesPerDoc))
+			keyIndex := getKeyIndex(id, r.Intn(numOfStatesPerDoc))
 			k := stateKeys[keyIndex]
 			v := stateValues[keyIndex][r.Intn(numOfValues)]
 			body := []byte(fmt.Sprintf("{\"%s\" : \"%s\", \"update_time\" : %d}", k, v, millis))
@@ -159,6 +158,9 @@ func main() {
 }
 
 func initData() {
+	baseDocID = uuid.New()
+	baseDocID = baseDocID + "_" + reverse(baseDocID) + "_"
+
 	numOfStatesPerDoc = 50
 
 	numOfStates = 5000
@@ -173,14 +175,6 @@ func initData() {
 		}
 		stateValues = append(stateValues, values)
 	}
-
-	for i := 0; i < numOfDoc; i++ {
-		docIDs = append(docIDs, uuid.New())
-	}
-}
-
-func getDocID(s string) string {
-	return s + "_" + reverse(s)
 }
 
 func reverse(s string) string {

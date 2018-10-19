@@ -86,6 +86,8 @@ func updateInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize i
 		bulkResponse, err := bulkRequest.Do(context.Background())
 		if err != nil {
 			fmt.Println("bulk failed", err)
+			fmt.Println("remainning requeset: ", bulkRequest.NumberOfActions())
+			panic("bulk failed")
 		}
 
 		timeUsed += time.Since(reqStartTime)

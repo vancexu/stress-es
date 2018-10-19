@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"strconv"
 	"sync"
+	"hash/fnv"
 )
 
 const insight_bulk_update_setting = `
@@ -27,6 +28,7 @@ var docIDs []string
 var numOfStates int
 var numOfValues int
 var numOfDoc int
+var numOfStatesPerDoc int
 
 func updateInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
 	duration, durationWithoutPrep *time.Duration, bulkTook *int64, reqUsed *time.Duration) {
@@ -62,9 +64,10 @@ func updateInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize i
 			src := rand.NewSource(time.Now().UnixNano())
 			r := rand.New(src)
 
-			id := getDocID(docIDs[r.Intn(numOfDoc)])
+			uid := docIDs[r.Intn(numOfDoc)]
+			id := getDocID(uid)
 
-			keyIndex := r.Intn(numOfStates)
+			keyIndex := getKeyIndex(uid, r.Intn(numOfStatesPerDoc))
 			k := stateKeys[keyIndex]
 			v := stateValues[keyIndex][r.Intn(numOfValues)]
 			body := []byte(fmt.Sprintf("{\"%s\" : \"%s\", \"update_time\" : %d}", k, v, millis))
@@ -156,6 +159,8 @@ func main() {
 }
 
 func initData() {
+	numOfStatesPerDoc = 50
+
 	numOfStates = 5000
 	numOfValues = 100
 	numOfDoc = 1000000 // 1M
@@ -184,4 +189,13 @@ func reverse(s string) string {
 		r[i], r[j] = r[j], r[i]
 	}
 	return string(r)
+}
+
+func getKeyIndex(uid string, offset int) uint32 {
+	h := fnv.New32a()
+	h.Write([]byte(uid))
+	hash := h.Sum32()
+
+	n := uint32(numOfStates)
+	return (hash % n + uint32(offset)) % n
 }

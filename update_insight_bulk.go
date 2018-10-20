@@ -56,7 +56,8 @@ func updateInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize i
 	bulkUsed := int64(0)
 	timeUsed := time.Duration(0)
 	startTime := time.Now()
-	for t := 1; t <= times; t++ {
+	retry := 0
+	for t := 1; t <= times && retry < 20; t++ {
 
 		bulkRequest := client.Bulk()
 		for i := 0; i < batchSize; i++ {
@@ -89,7 +90,10 @@ func updateInsightBulk(threadID string, done *sync.WaitGroup, times, batchSize i
 		if err != nil {
 			fmt.Println("bulk failed", err)
 			fmt.Println("remainning requeset: ", bulkRequest.NumberOfActions())
-			panic("bulk failed")
+			//panic("bulk failed")
+			t--
+			retry++
+			continue
 		}
 
 		timeUsed += time.Since(reqStartTime)

@@ -9,6 +9,7 @@ import (
 	"github.com/pborman/uuid"
 	"strconv"
 	"sync"
+	"github.com/vancexu/stress-es/common"
 )
 
 type ClosedWorkflowBulk struct {
@@ -39,7 +40,7 @@ func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
 	info := "some info"
 
 	ctx := context.Background()
-	client, err := elastic.NewClient()
+	client, err := common.NewElasticClient()
 	if err != nil {
 		panic(err)
 	}

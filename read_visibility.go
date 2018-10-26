@@ -6,12 +6,13 @@ import (
 	"github.com/olivere/elastic"
 	"math/rand"
 	"time"
+	"github.com/vancexu/stress-es/common"
 )
 
 func read_visibility(low, high int64, from, pagesize int) (int64, int64) {
 	ctx := context.Background()
 
-	client, err := elastic.NewClient()
+	client, err := common.NewElasticClient()
 	if err != nil {
 		panic(err)
 	}

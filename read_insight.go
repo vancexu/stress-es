@@ -7,12 +7,13 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
+	"github.com/vancexu/stress-es/common"
 )
 
 func readInsight(low, high int64, from, pagesize int, stateKey, stateValue string) (int64, int64) {
 	ctx := context.Background()
 
-	client, err := elastic.NewClient()
+	client, err := common.NewElasticClient()
 	if err != nil {
 		panic(err)
 	}

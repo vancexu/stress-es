@@ -7,6 +7,7 @@ import (
 	"time"
 	"io"
 	"sync"
+	"github.com/vancexu/stress-es/common"
 )
 
 func scroll_visibility(low, high int64, pagesize int) (int64, int64, int64, int64) {
@@ -20,7 +21,7 @@ func scroll_visibility_sort(low, high int64, pagesize int) (int64, int64, int64,
 func scroll_helper(low, high int64, pagesize int, sorted bool) (int64, int64, int64, int64) {
 	ctx := context.Background()
 
-	client, err := elastic.NewClient()
+	client, err := common.NewElasticClient()
 	if err != nil {
 		panic(err)
 	}

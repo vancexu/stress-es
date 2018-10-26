@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"sync"
 	"hash/fnv"
+	"github.com/vancexu/stress-es/common"
 )
 
 const insight_bulk2_update_setting = `
@@ -37,7 +38,7 @@ func updateInsightBulk2(threadID string, done *sync.WaitGroup, times, batchSize 
 	domainID := "bulkupd2-843c-4055-8baa-de52d697335d"
 
 	ctx := context.Background()
-	client, err := elastic.NewClient()
+	client, err := common.NewElasticClient()
 	if err != nil {
 		panic(err)
 	}

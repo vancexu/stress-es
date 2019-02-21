@@ -17,17 +17,17 @@ func read_visibility(low, high int64, from, pagesize int) (int64, int64) {
 		panic(err)
 	}
 
-	domainID := "bulk4ea2-69f9-4495-a1b2-6ea71b5fa459"
+	domainID := "3006499f-37b1-48e7-9d53-5a6a6363e72a"
 	workflowTypeName := "code.uber.internal/devexp/cadence-bench/load/basic.stressWorkflowExecute"
 
-	matchQuery := elastic.NewMatchQuery("workflow_type_name", workflowTypeName)
-	rangeQuery := elastic.NewRangeQuery("close_time").Gte(low).Lte(high)
+	matchQuery := elastic.NewMatchQuery("WorkflowType", workflowTypeName)
+	rangeQuery := elastic.NewRangeQuery("CloseTime").Gte(low).Lte(high)
 	boolQuery := elastic.NewBoolQuery().Must(matchQuery).Filter(rangeQuery)
 
 	searchResult, err := client.Search().Index(domainID).Query(boolQuery).
-		Sort("close_time", false).
-		From(from).Size(pagesize).
-		Pretty(true).
+		Sort("CloseTime", false).
+		From(from).
+		Size(pagesize).
 		Do(ctx)
 	if err != nil {
 		panic(err)
@@ -47,7 +47,7 @@ func main() {
 		millis := time.Now().UnixNano() / 1e6
 		src := rand.NewSource(millis)
 		r := rand.New(src)
-		t, h := read_visibility(millis-3600000, millis, r.Intn(10), 10)
+		t, h := read_visibility(millis-3600000, millis, r.Intn(10), 100)
 		//fmt.Println(t)
 		totalTime += t
 		totalHits += h

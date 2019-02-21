@@ -42,19 +42,25 @@ func main() {
 	var times int
 	fmt.Println("Number of requests: ")
 	fmt.Scanln(&times)
+	var timeBackInHours int
+	fmt.Println("Number of hours back: ")
+	fmt.Scanln(&timeBackInHours)
 
 	var totalTime int64
 	var totalHits int64
+	startTime := time.Now()
 	for i := 0; i < times; i += 1 {
-		millis := time.Now().UnixNano() / 1e6
-		src := rand.NewSource(millis)
+		nanos := time.Now().UnixNano()
+		src := rand.NewSource(nanos)
 		r := rand.New(src)
-		t, h := read_visibility(millis-3600000, millis, r.Intn(10), 100)
+		t, h := read_visibility(time.Now().Add(time.Duration(-timeBackInHours*60)*time.Minute).UnixNano(), nanos, r.Intn(10), 100)
 		//fmt.Println(t)
 		totalTime += t
 		totalHits += h
 	}
 
+	fmt.Println(time.Since(startTime))
 	fmt.Println("avg read time millis: ", totalTime/int64(times))
 	fmt.Println("avg hits: ", totalHits/int64(times))
+
 }

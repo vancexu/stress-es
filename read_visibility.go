@@ -9,13 +9,8 @@ import (
 	"github.com/vancexu/stress-es/common"
 )
 
-func read_visibility(low, high int64, from, pagesize int) (int64, int64) {
+func read_visibility(client *elastic.Client, low, high int64, from, pagesize int) (int64, int64) {
 	ctx := context.Background()
-
-	client, err := common.NewElasticClient()
-	if err != nil {
-		panic(err)
-	}
 
 	indexName := "cadence-visibility-dev-dca1a"
 	domainID := "3006499f-37b1-48e7-9d53-5a6a6363e72a"
@@ -46,20 +41,26 @@ func main() {
 	fmt.Println("Number of hours back: ")
 	fmt.Scanln(&timeBackInHours)
 
+	client, err := common.NewElasticClient()
+	if err != nil {
+		panic(err)
+	}
+
 	var totalTime int64
 	var totalHits int64
-	startTime := time.Now()
+	testStartTime := time.Now()
 	for i := 0; i < times; i += 1 {
-		nanos := time.Now().UnixNano()
-		src := rand.NewSource(nanos)
+		lo := time.Now().Add(time.Duration(-timeBackInHours*60)*time.Minute).UnixNano()
+		hi := time.Now().UnixNano()
+		src := rand.NewSource(lo)
 		r := rand.New(src)
-		t, h := read_visibility(time.Now().Add(time.Duration(-timeBackInHours*60)*time.Minute).UnixNano(), nanos, r.Intn(10), 100)
+		t, h := read_visibility(client, lo, hi, r.Intn(10), 100)
 		//fmt.Println(t)
 		totalTime += t
 		totalHits += h
 	}
 
-	fmt.Println(time.Since(startTime))
+	fmt.Println(time.Since(testStartTime))
 	fmt.Println("avg read time millis: ", totalTime/int64(times))
 	fmt.Println("avg hits: ", totalHits/int64(times))
 

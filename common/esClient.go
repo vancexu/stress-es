@@ -10,14 +10,14 @@ func NewElasticClient() (*elastic.Client, error) {
 	httpClient := &http.Client{
 		Transport: &muttleyTransport{
 			source:      "cadence-stress-es",
-			destination: "es-cadence-query",
+			destination: "es-staging-cadence-query",
 		},
 	}
 
 	esURL := &url.URL{
 		Scheme: "http",
 		Host:   "localhost:5436",
-		Path:   "cadence",
+		Path:   "staging-cadence",
 	}
 
 	return elastic.NewClient(

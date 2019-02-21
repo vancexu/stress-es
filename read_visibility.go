@@ -17,14 +17,16 @@ func read_visibility(low, high int64, from, pagesize int) (int64, int64) {
 		panic(err)
 	}
 
+	indexName := "cadence-visibility-dev-dca1a"
 	domainID := "3006499f-37b1-48e7-9d53-5a6a6363e72a"
 	workflowTypeName := "code.uber.internal/devexp/cadence-bench/load/basic.stressWorkflowExecute"
 
 	matchQuery := elastic.NewMatchQuery("WorkflowType", workflowTypeName)
+	matchDomain := elastic.NewMatchQuery("DomainID", domainID)
 	rangeQuery := elastic.NewRangeQuery("CloseTime").Gte(low).Lte(high)
-	boolQuery := elastic.NewBoolQuery().Must(matchQuery).Filter(rangeQuery)
+	boolQuery := elastic.NewBoolQuery().Must(matchQuery).Must(matchDomain).Filter(rangeQuery)
 
-	searchResult, err := client.Search().Index(domainID).Query(boolQuery).
+	searchResult, err := client.Search().Index(indexName).Query(boolQuery).
 		Sort("CloseTime", false).
 		From(from).
 		Size(pagesize).

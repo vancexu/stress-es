@@ -67,9 +67,6 @@ func scroll_helper(client *elastic.Client, low, high int64, pagesize int, sorted
 	fmt.Println("scroll a page avg took: ", avgTook)
 	fmt.Println("scroll a page max took: ", maxTook)
 
-	if err != nil {
-		panic(err)
-	}
 	return tookInMillis, totalHits, avgTook, maxTook
 }
 

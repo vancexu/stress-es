@@ -10,21 +10,16 @@ import (
 	"time"
 )
 
-func scroll_visibility(low, high int64, pagesize int) (int64, int64, int64, int64) {
-	return scroll_helper(low, high, pagesize, false)
+func scroll_visibility(client *elastic.Client, low, high int64, pagesize int) (int64, int64, int64, int64) {
+	return scroll_helper(client, low, high, pagesize, false)
 }
 
-func scroll_visibility_sort(low, high int64, pagesize int) (int64, int64, int64, int64) {
-	return scroll_helper(low, high, pagesize, true)
+func scroll_visibility_sort(client *elastic.Client, low, high int64, pagesize int) (int64, int64, int64, int64) {
+	return scroll_helper(client, low, high, pagesize, true)
 }
 
-func scroll_helper(low, high int64, pagesize int, sorted bool) (int64, int64, int64, int64) {
+func scroll_helper(client *elastic.Client, low, high int64, pagesize int, sorted bool) (int64, int64, int64, int64) {
 	ctx := context.Background()
-
-	client, err := common.NewElasticClient()
-	if err != nil {
-		panic(err)
-	}
 
 	var tookInMillis int64
 	var totalHits int64
@@ -53,7 +48,7 @@ func scroll_helper(low, high int64, pagesize int, sorted bool) (int64, int64, in
 		i++
 		results, err := scroll.Do(ctx)
 		if err == io.EOF {
-			scroll.Clear(context.Background())
+			//scroll.Clear(context.Background())
 			break // all results retrieved
 		}
 		if err != nil {
@@ -90,6 +85,12 @@ func main() {
 	if times <= 0 {
 		times = 1
 	}
+
+	client, err := common.NewElasticClient()
+	if err != nil {
+		panic(err)
+	}
+
 	var done sync.WaitGroup
 	done.Add(times)
 
@@ -100,8 +101,8 @@ func main() {
 	var avgTook int64
 	for i := 0; i < times; i += 1 {
 		go func() {
-			millis := time.Now().UnixNano() / 1e6
-			t, h, at, mt := scroll_visibility(0, millis, pageSize)
+			millis := time.Now().UnixNano()
+			t, h, at, mt := scroll_visibility(client, 0, millis, pageSize)
 			lock.Lock()
 			totalTime += t
 			totalHits += h
@@ -129,7 +130,7 @@ func main() {
 	//for i := 0; i < times; i += 1 {
 	//	go func() {
 	//		millis := time.Now().UnixNano() / 1e6
-	//		t, h, at, mt := scroll_visibility_sort(0, millis, pageSize)
+	//		t, h, at, mt := scroll_visibility_sort(client, 0, millis, pageSize)
 	//		lock.Lock()
 	//		totalTime += t
 	//		totalHits += h

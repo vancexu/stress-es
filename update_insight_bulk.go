@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 	"github.com/olivere/elastic"
 	"github.com/pborman/uuid"
+	"hash/fnv"
 	"math/rand"
 	"strconv"
 	"sync"
-	"hash/fnv"
 )
 
 const insight_bulk_update_setting = `
@@ -195,5 +195,5 @@ func getKeyIndex(uid string, offset int) uint32 {
 	hash := h.Sum32()
 
 	n := uint32(numOfStates)
-	return (hash % n + uint32(offset)) % n
+	return (hash%n + uint32(offset)) % n
 }

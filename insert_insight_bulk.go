@@ -7,10 +7,10 @@ import (
 
 	"encoding/json"
 	"github.com/olivere/elastic"
+	"github.com/pborman/uuid"
 	"math/rand"
 	"strconv"
 	"sync"
-	"github.com/pborman/uuid"
 )
 
 const insight_bulk_setting = `

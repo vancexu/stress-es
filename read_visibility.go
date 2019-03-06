@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/olivere/elastic"
-	"math/rand"
-	"time"
 	"github.com/vancexu/stress-es/common"
+	"math/rand"
 	"sync"
+	"time"
 )
 
 func read_visibility(client *elastic.Client, low, high int64, from, pagesize int) (int64, int64) {
@@ -58,7 +58,7 @@ func main() {
 		var totalHits int64
 
 		for i := 0; i < times; i += 1 {
-			lo := time.Now().Add(time.Duration(-timeBackInHours*60)*time.Minute).UnixNano()
+			lo := time.Now().Add(time.Duration(-timeBackInHours*60) * time.Minute).UnixNano()
 			hi := time.Now().UnixNano()
 			src := rand.NewSource(lo)
 			r := rand.New(src)

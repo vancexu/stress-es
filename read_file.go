@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/pborman/uuid"
-	"os"
-	"fmt"
 	"bufio"
+	"fmt"
+	"github.com/pborman/uuid"
 	"io"
+	"os"
 )
 
 func main() {

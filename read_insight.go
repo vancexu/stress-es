@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/olivere/elastic"
+	"github.com/vancexu/stress-es/common"
 	"math/rand"
 	"strconv"
 	"time"
-	"github.com/vancexu/stress-es/common"
 )
 
 func readInsight(low, high int64, from, pagesize int, stateKey, stateValue string) (int64, int64) {

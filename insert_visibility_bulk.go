@@ -7,9 +7,9 @@ import (
 
 	"github.com/olivere/elastic"
 	"github.com/pborman/uuid"
+	"github.com/vancexu/stress-es/common"
 	"strconv"
 	"sync"
-	"github.com/vancexu/stress-es/common"
 )
 
 type ClosedWorkflowBulk struct {

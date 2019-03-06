@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/olivere/elastic"
-	"time"
+	"github.com/vancexu/stress-es/common"
 	"io"
 	"sync"
-	"github.com/vancexu/stress-es/common"
+	"time"
 )
 
 func scroll_visibility(low, high int64, pagesize int) (int64, int64, int64, int64) {
@@ -31,19 +31,21 @@ func scroll_helper(low, high int64, pagesize int, sorted bool) (int64, int64, in
 	var maxTook int64
 	var avgTook int64
 
-	domainID := "bulk4ea2-69f9-4495-a1b2-6ea71b5fa459"
+	indexName := "cadence-visibility-dev-dca1a"
+	domainID := "3006499f-37b1-48e7-9d53-5a6a6363e72a"
 	workflowTypeName := "code.uber.internal/devexp/cadence-bench/load/basic.stressWorkflowExecute"
 
-	matchQuery := elastic.NewMatchQuery("workflow_type_name", workflowTypeName)
-	rangeQuery := elastic.NewRangeQuery("close_time").Gte(low).Lte(high)
-	boolQuery := elastic.NewBoolQuery().Must(matchQuery).Filter(rangeQuery)
+	matchQuery := elastic.NewMatchQuery("WorkflowType", workflowTypeName)
+	matchDomain := elastic.NewMatchQuery("DomainID", domainID)
+	//rangeQuery := elastic.NewRangeQuery("CloseTime").Gte(low).Lte(high)
+	boolQuery := elastic.NewBoolQuery().Must(matchQuery).Must(matchDomain)
 
 	var scroll *elastic.ScrollService
 	if sorted {
-		scroll = client.Scroll().Index(domainID).Query(boolQuery).
-			Sort("close_time", false).Size(pagesize)
+		scroll = client.Scroll().Index(indexName).Query(boolQuery).
+			Sort("CloseTime", false).Size(pagesize)
 	} else {
-		scroll = client.Scroll().Index(domainID).Query(boolQuery).Size(pagesize)
+		scroll = client.Scroll().Index(indexName).Query(boolQuery).Size(pagesize)
 	}
 
 	i := int64(0)
@@ -51,6 +53,7 @@ func scroll_helper(low, high int64, pagesize int, sorted bool) (int64, int64, in
 		i++
 		results, err := scroll.Do(ctx)
 		if err == io.EOF {
+			scroll.Clear(context.Background())
 			break // all results retrieved
 		}
 		if err != nil {
@@ -81,7 +84,7 @@ func main() {
 	fmt.Scanln(&times)
 
 	var pageSize int
-	fmt.Println( "Page size: ")
+	fmt.Println("Page size: ")
 	fmt.Scanln(&pageSize)
 
 	if times <= 0 {
@@ -117,31 +120,31 @@ func main() {
 	fmt.Println("avg read total time millis: ", totalTime/int64(times))
 	fmt.Println("avg hits: ", totalHits/int64(times))
 
-	// for sort scroll
-	totalTime = 0
-	totalHits = 0
-	maxTook = 0
-	avgTook = 0
-	done.Add(times)
-	for i := 0; i < times; i += 1 {
-		go func() {
-			millis := time.Now().UnixNano() / 1e6
-			t, h, at, mt := scroll_visibility_sort(0, millis, pageSize)
-			lock.Lock()
-			totalTime += t
-			totalHits += h
-			avgTook += at
-			if mt > maxTook {
-				maxTook = mt
-			}
-			lock.Unlock()
-			done.Done()
-		}()
-	}
-	done.Wait()
-	fmt.Println("------ Scroll Visibility Sort ------")
-	fmt.Println("avg read 1 page takes millis: ", avgTook/int64(times))
-	fmt.Println("max read 1 page takes millis: ", maxTook)
-	fmt.Println("avg read total time millis: ", totalTime/int64(times))
-	fmt.Println("avg hits: ", totalHits/int64(times))
+	//// for sort scroll
+	//totalTime = 0
+	//totalHits = 0
+	//maxTook = 0
+	//avgTook = 0
+	//done.Add(times)
+	//for i := 0; i < times; i += 1 {
+	//	go func() {
+	//		millis := time.Now().UnixNano() / 1e6
+	//		t, h, at, mt := scroll_visibility_sort(0, millis, pageSize)
+	//		lock.Lock()
+	//		totalTime += t
+	//		totalHits += h
+	//		avgTook += at
+	//		if mt > maxTook {
+	//			maxTook = mt
+	//		}
+	//		lock.Unlock()
+	//		done.Done()
+	//	}()
+	//}
+	//done.Wait()
+	//fmt.Println("------ Scroll Visibility Sort ------")
+	//fmt.Println("avg read 1 page takes millis: ", avgTook/int64(times))
+	//fmt.Println("max read 1 page takes millis: ", maxTook)
+	//fmt.Println("avg read total time millis: ", totalTime/int64(times))
+	//fmt.Println("avg hits: ", totalHits/int64(times))
 }

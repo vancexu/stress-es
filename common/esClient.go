@@ -23,5 +23,6 @@ func NewElasticClient() (*elastic.Client, error) {
 	return elastic.NewClient(
 		elastic.SetHttpClient(httpClient),
 		elastic.SetURL(esURL.String()),
+		elastic.SetDecoder(&elastic.NumberDecoder{}),
 	)
 }

@@ -13,21 +13,21 @@ import (
 )
 
 type ClosedWorkflowBulk struct {
-	WorkflowID       string `json:"workflow_id"`
-	RunID            string `json:"run_id"`
-	WorkflowTypeName string `json:"workflow_type_name"`
-	Status           int    `json:"status"`
-	StartTime        int64  `json:"start_time"`
-	CloseTime        int64  `json:"close_time"`
-	HistoryLength    int    `json:"history_length"`
-	Info             string `json:"info,omitempty"`
+	DomainID         string `json:"DomainID"`
+	WorkflowID       string `json:"WorkflowID"`
+	RunID            string `json:"RunID"`
+	WorkflowTypeName string `json:"WorkflowType"`
+	Status           int    `json:"CloseStatus"`
+	StartTime        int64  `json:"StartTime"`
+	CloseTime        int64  `json:"CloseTime"`
+	HistoryLength    int    `json:"HistoryLength"`
 }
 
 const index_bulk_setting = `
 {
 	"settings":{
-		"number_of_shards": 5,
-		"number_of_replicas": 1
+		"number_of_shards": 20,
+		"number_of_replicas": 2
 	}
 }`
 
@@ -35,19 +35,19 @@ func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
 	duration, durationWithoutPrep *time.Duration, bulkTook *int64, reqUsed *time.Duration) {
 	defer done.Done()
 
-	domainID := "bulk4ea2-69f9-4495-a1b2-6ea71b5fa459"
+	index := "cadence-visibility-perf-dca1a"
+	domainID := "3006499f-37b1-48e7-9d53-5a6a6363e72a"
 	workflowTypeName := "code.uber.internal/devexp/cadence-bench/load/basic.stressWorkflowExecute"
-	info := "some info"
 
 	ctx := context.Background()
 	client, err := common.NewElasticClient()
 	if err != nil {
 		panic(err)
 	}
-	exists, err := client.IndexExists(domainID).Do(ctx)
+	exists, err := client.IndexExists(index).Do(ctx)
 	if !exists {
-		fmt.Println("create index ", domainID)
-		createIndex, err := client.CreateIndex(domainID).BodyString(index_bulk_setting).Do(ctx)
+		fmt.Println("create index ", index)
+		createIndex, err := client.CreateIndex(index).BodyString(index_bulk_setting).Do(ctx)
 		if err != nil {
 			panic(err)
 		}
@@ -68,6 +68,7 @@ func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
 
 			id := rid + "_" + rid
 			body := ClosedWorkflowBulk{
+				DomainID:         domainID,
 				WorkflowID:       rid,
 				RunID:            rid,
 				WorkflowTypeName: workflowTypeName,
@@ -75,10 +76,9 @@ func insertDocBulk(threadID string, done *sync.WaitGroup, times, batchSize int,
 				StartTime:        millis - 3600,
 				CloseTime:        millis,
 				HistoryLength:    1024,
-				Info:             info,
 			}
 
-			req := elastic.NewBulkIndexRequest().Index(domainID).Type("_doc").Id(id).Doc(body)
+			req := elastic.NewBulkIndexRequest().Index(index).Type("_doc").Id(id).Doc(body)
 			bulkRequest.Add(req)
 		}
 

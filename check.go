@@ -39,7 +39,7 @@ func main() {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		ids = append(ids, strings.Join(strings.Split(line[1:len(line) - 1], " "), "~"))
+		ids = append(ids, strings.Join(strings.Split(line[1:len(line)-1], " "), "~"))
 	}
 
 	//index := "cadence-visibility-dev"

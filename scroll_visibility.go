@@ -65,11 +65,11 @@ func scroll_helper(client *elastic.Client, low, high int64, pagesize int, sorted
 
 	}
 	totalLatency := time.Since(startTime)
-	fmt.Println("scroll 1 page latency takes: ", time.Duration(totalLatency.Nanoseconds()/i))
-	fmt.Println("read total latency takes: ", totalLatency)
+	//fmt.Println("scroll 1 page latency takes: ", time.Duration(totalLatency.Nanoseconds()/i))
+	//fmt.Println("read total latency takes: ", totalLatency)
 	avgTook = tookInMillis / i
-	fmt.Println("scroll a page avg took: ", avgTook)
-	fmt.Println("scroll a page max took: ", maxTook)
+	//fmt.Println("scroll a page avg took: ", avgTook)
+	//fmt.Println("scroll a page max took: ", maxTook)
 
 	return tookInMillis, totalHits, avgTook, maxTook, totalLatency, time.Duration(totalLatency.Nanoseconds() / i)
 }

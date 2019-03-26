@@ -203,7 +203,7 @@ func main() {
 	var numOfPages int64
 	var latency time.Duration
 	var avgLatency time.Duration
-	index := "cadence-visibility-dev-dca1a"
+	index := "cadence-visibility-perf-dca1a"
 	domainID := "3006499f-37b1-48e7-9d53-5a6a6363e72a"
 	//// local
 	//index := "cadence-visibility-dev"
